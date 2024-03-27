@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { TextGenerateEffect } from "@/components/text-generate-effect";
 
 export default function Home() {
-  const [poemData, setPoemData] = useState({ poem: "", imageUrl: "" });
+  const [data, setData] = useState({
+    poem: "",
+    poet: "",
+    imageUrl: "",
+  });
   const [currentTime, setCurrentTime] = useState(
     new Date().toLocaleTimeString("en-US", {
       hour12: true,
@@ -18,11 +23,14 @@ export default function Home() {
       hour: "2-digit",
       minute: "2-digit",
     });
+    const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const response = await fetch(
-      `/api/fetchData?time=${encodeURIComponent(currentTimeParam)}`
+      `/api/fetchData?time=${encodeURIComponent(
+        currentTimeParam
+      )}&tz=${encodeURIComponent(timeZoneName)}`
     );
     const data = await response.json();
-    setPoemData(data);
+    setData(data);
   };
 
   useEffect(() => {
@@ -56,11 +64,11 @@ export default function Home() {
       <div className="absolute top-12 md:top-36 left-1/2 transform -translate-x-1/2 z-50 md:text-6xl text-4xl">
         {currentTime}
       </div>
-      {poemData.imageUrl && (
+      {data.imageUrl && (
         <div className="relative w-full h-full">
           <div className="absolute inset-0 bg-black opacity-60"></div>
           <Image
-            src={poemData.imageUrl}
+            src={data.imageUrl}
             alt="Random Portrait"
             layout="fill"
             objectFit="cover"
@@ -68,15 +76,23 @@ export default function Home() {
             priority
           />
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-8 py-16 w-full flex justify-center items-center bg-gradient-to-r from-black/5 via-black/30 to-black/5">
-            <TextGenerateEffect words={poemData.poem} />
+            <TextGenerateEffect words={data.poem} />
           </div>
         </div>
       )}
-      <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50 md:text-xl italic bg-gradient-to-r from-black/0 via-black/30 to-black/0 p-4 md:px-28">
-        <span className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-100/80 whitespace-nowrap">
-          in the style of sylvia plath
-        </span>
-      </div>
+      {data.poet && (
+        <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50 md:text-xl bg-gradient-to-r from-black/0 via-black/30 to-black/0 p-2 md:py-4 md:px-28 group">
+          <span className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-100/80 whitespace-nowrap italic group-hover:hidden">
+            in the style of {data.poet}
+          </span>
+          <Link
+            href="http://twitter.com/_rittik"
+            className="hidden group-hover:block text-orange-300 hover:text-orange-400 tracking-widest underline underline-offset-8"
+          >
+            by @_rittik
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

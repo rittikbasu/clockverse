@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
+import { Blurhash } from "react-blurhash";
+
 import { TextGenerateEffect } from "@/components/text-generate-effect";
 
 export default function Home() {
@@ -9,6 +11,8 @@ export default function Home() {
     poem: "",
     poet: "",
     imageUrl: "",
+    blurhash: "L9FFjRNJKQ_3~q4.xCRPK7^+M{V@",
+    imageAlt: "",
   });
   const [currentTime, setCurrentTime] = useState(
     new Date().toLocaleTimeString("en-US", {
@@ -32,9 +36,14 @@ export default function Home() {
     );
     const data = await response.json();
     setData(data);
+    localStorage.setItem("blurhash", data.blurhash);
   };
 
   useEffect(() => {
+    const savedBlurhash = localStorage.getItem("blurhash");
+    if (savedBlurhash) {
+      setData((prevData) => ({ ...prevData, blurhash: savedBlurhash }));
+    }
     fetchPoemAndImage();
   }, []);
 
@@ -70,12 +79,12 @@ export default function Home() {
         <div className="absolute top-12 md:top-36 left-1/2 transform -translate-x-1/2 z-50 md:text-6xl text-4xl">
           {currentTime}
         </div>
-        {data.imageUrl && (
+        {data.imageUrl ? (
           <div className="relative w-full h-full">
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/30 to-black/30 z-40"></div>
             <Image
               src={data.imageUrl}
-              alt="Random Portrait"
+              alt={data.imageAlt}
               layout="fill"
               objectFit="cover"
               className=""
@@ -85,6 +94,16 @@ export default function Home() {
               <TextGenerateEffect words={data.poem} />
             </div>
           </div>
+        ) : (
+          <Blurhash
+            hash={data.blurhash}
+            width="100%"
+            height="100%"
+            resolutionX={32}
+            resolutionY={32}
+            punch={1}
+            style={{ filter: "blur(20px)" }}
+          />
         )}
         {data.poet && (
           <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50 md:text-xl group">

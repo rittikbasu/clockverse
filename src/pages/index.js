@@ -60,7 +60,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen">
+    <div className="flex flex-col justify-center items-center h-dvh w-dvw">
       <div className="absolute top-12 md:top-36 left-1/2 transform -translate-x-1/2 z-50 md:text-6xl text-4xl">
         {currentTime}
       </div>

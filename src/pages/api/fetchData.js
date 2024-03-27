@@ -52,9 +52,17 @@ export default async function handler(req, res) {
   let imageUrl =
     "https://images.unsplash.com/photo-1710976151734-72b48a6d66f4?q=80&w=2548&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 
+  // First, check if the poem data already exists in Redis
+  let cachedData = await redis.get(redisPoemKey);
+  if (cachedData) {
+    const { poem, poet } = cachedData;
+    const imageUrl = await redis.get(redisImageKey);
+    return res.status(200).json({ poem, poet, imageUrl });
+  }
+
   // Attempt to acquire a lock
   const lock = await redis.set(redisPoemKey + "_lock", "1", {
-    ex: 10, // Set the key with an expiry of 10 seconds
+    ex: 10,
     nx: true, // Only set the key if it does not already exist
   });
 

@@ -21,11 +21,6 @@ export const TextGenerateEffect = ({ words, className }) => {
     return (
       <motion.div ref={scope}>
         {wordsArray.map((word, idx) => {
-          // Check if the word is actually a newline character
-          if (word === "\n") {
-            // Return a break element for new lines
-            return <br key={"newline" + idx} />;
-          }
           return (
             <motion.span
               key={word + idx}

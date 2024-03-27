@@ -51,13 +51,18 @@ export default async function handler(req, res) {
     .replace(/:\d{2}\.\d{3}Z$/, "Z");
   let imageUrl =
     "https://images.unsplash.com/photo-1710976151734-72b48a6d66f4?q=80&w=2548&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+  let blurhash = "LE9@L+~pM_M|?a%MR,M|IpRkWBNG";
+  let imageAlt = "An image from Unsplash";
 
   // First, check if the poem data already exists in Redis
   let cachedData = await redis.get(redisPoemKey);
   if (cachedData) {
     const { poem, poet } = cachedData;
-    const imageUrl = await redis.get(redisImageKey);
-    return res.status(200).json({ poem, poet, imageUrl });
+    const cachedImage = await redis.get(redisImageKey);
+    if (cachedImage) {
+      const { imageUrl, blurhash, imageAlt } = cachedImage;
+      return res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
+    }
   }
 
   // Attempt to acquire a lock
@@ -83,6 +88,8 @@ export default async function handler(req, res) {
 
       const data = await unsplashResponse.json();
       imageUrl = data.urls.full;
+      blurhash = data.blur_hash;
+      imageAlt = data.alt_description;
     } catch (error) {
       // console.error(error);
       console.log("Rate Limit Exceeded");
@@ -108,10 +115,16 @@ export default async function handler(req, res) {
     await redis.set(redisPoemKey, JSON.stringify({ poem, poet }), {
       ex: 60,
     });
-    await redis.set(redisImageKey, imageUrl, { ex: 60 });
+    await redis.set(
+      redisImageKey,
+      JSON.stringify({ imageUrl, blurhash, imageAlt }),
+      {
+        ex: 60,
+      }
+    );
     await redis.del(redisPoemKey + "_lock");
 
-    res.status(200).json({ poem, poet, imageUrl });
+    res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
   } else {
     // Lock not acquired, wait for the content to be generated
     let cachedData;
@@ -122,7 +135,10 @@ export default async function handler(req, res) {
     }
 
     const { poem, poet } = cachedData;
-    imageUrl = await redis.get(redisImageKey);
-    res.status(200).json({ poem, poet, imageUrl });
+    const cachedImage = await redis.get(redisImageKey);
+    if (cachedImage) {
+      const { imageUrl, blurhash, imageAlt } = cachedImage;
+      res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
+    }
   }
 }

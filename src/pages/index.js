@@ -25,35 +25,7 @@ export default function Home() {
       minute: "2-digit",
     })
   );
-  const [blurAmount, setBlurAmount] = useState(0);
-
-  const handleImageBlur = (isLoading) => {
-    const blurChange = isLoading ? 1 : -1;
-    const blurLimit = isLoading ? 250 : 0;
-    const intervalSpeed = isLoading ? 0.5 : 10;
-
-    const blurInterval = setInterval(() => {
-      setBlurAmount((prevBlur) => {
-        if (
-          (isLoading && prevBlur < blurLimit) ||
-          (!isLoading && prevBlur > blurLimit)
-        ) {
-          return prevBlur + blurChange;
-        } else {
-          clearInterval(blurInterval);
-          return blurLimit;
-        }
-      });
-    }, intervalSpeed);
-  };
-
-  const decreaseBlur = () => {
-    handleImageBlur(false);
-  };
-
-  const increaseBlur = () => {
-    handleImageBlur(true);
-  };
+  const [blurAmount, setBlurAmount] = useState("blur-none");
 
   const fetchPoemAndImage = async () => {
     const currentTimeParam = new Date().toLocaleTimeString("en-US", {
@@ -71,20 +43,23 @@ export default function Home() {
 
     if (apiData.imageUrl) {
       if (apiData.imageUrl === data.imageUrl) {
-        setBlurAmount(0);
+        setBlurAmount("blur-none");
       } else {
-        increaseBlur();
+        setBlurAmount("blur-3xl");
       }
       setData(apiData);
       localStorage.setItem("blurhash", apiData.blurhash);
     } else {
       if (data.imageUrl) {
+        console.log("dfoivnfdoinvovup image loaded");
         setData((prevData) => ({
           ...prevData,
           poem: apiData.poem,
           poet: apiData.poet,
         }));
       } else {
+        console.log("Backup image loaded");
+        setBlurAmount("blur-3xl");
         setData({
           poem: apiData.poem,
           poet: apiData.poet,
@@ -93,7 +68,6 @@ export default function Home() {
           imageAlt: backupImageAlt,
         });
         localStorage.setItem("blurhash", backupBlurhash);
-        increaseBlur();
       }
     }
   };
@@ -147,9 +121,9 @@ export default function Home() {
                 alt={data.imageAlt || "An image from Unsplash"}
                 layout="fill"
                 objectFit="cover"
+                className={` ${blurAmount} transistion duration-[3000ms] ease-in`}
                 priority
-                onLoadingComplete={decreaseBlur}
-                style={{ filter: `blur(${blurAmount}px)` }}
+                onLoadingComplete={() => setBlurAmount("blur-none")}
               />
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-8 py-16 w-full flex justify-center items-center z-40">
                 <TextGenerateEffect words={data.poem} />

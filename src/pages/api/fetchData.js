@@ -59,9 +59,11 @@ export default async function handler(req, res) {
     const { poem, poet } = cachedData;
     const cachedImage = await redis.get(redisImageKey);
     if (cachedImage) {
-      const { imageUrl, blurhash, imageAlt } = cachedImage;
-      return res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
+      imageUrl = cachedImage.imageUrl;
+      blurhash = cachedImage.blurhash;
+      imageAlt = cachedImage.imageAlt;
     }
+    return res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
   }
 
   // Attempt to acquire a lock
@@ -138,8 +140,10 @@ export default async function handler(req, res) {
     const { poem, poet } = cachedData;
     const cachedImage = await redis.get(redisImageKey);
     if (cachedImage) {
-      const { imageUrl, blurhash, imageAlt } = cachedImage;
-      res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
+      imageUrl = cachedImage.imageUrl;
+      blurhash = cachedImage.blurhash;
+      imageAlt = cachedImage.imageAlt;
     }
+    res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
   }
 }

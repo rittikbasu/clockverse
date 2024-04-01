@@ -59,7 +59,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    let previousMinute = new Date().getMinutes();
     const savedData = localStorage.getItem("data");
     const savedTime = localStorage.getItem("time");
     const currentTime = getCurrentTime();
@@ -69,19 +68,19 @@ export default function Home() {
       fetchPoemAndImage();
     }
 
-    const interval = setInterval(() => {
-      const currentMinute = new Date().getMinutes();
-      const newTime = getCurrentTime();
-
-      if (currentMinute !== previousMinute) {
+    const syncIntervalWithSystemClock = () => {
+      const now = new Date();
+      const delay = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+      setTimeout(() => {
         fetchPoemAndImage();
-        previousMinute = currentMinute;
-      }
+        setCurrentTime(getCurrentTime());
+        syncIntervalWithSystemClock();
+      }, delay);
+    };
 
-      setCurrentTime(newTime);
-    }, 1000);
+    syncIntervalWithSystemClock();
 
-    return () => clearInterval(interval);
+    return () => clearTimeout(syncIntervalWithSystemClock);
   }, []);
 
   useEffect(() => {
@@ -133,7 +132,7 @@ export default function Home() {
               {prevImage && (
                 <Image
                   src={prevImage}
-                  alt=""
+                  alt="An image from Unsplash"
                   fill
                   className={clsx(
                     "absolute object-cover",
@@ -157,15 +156,17 @@ export default function Home() {
               </div>
             </>
           )}
-          <Blurhash
-            hash={data.blurhash}
-            width="100%"
-            height="100%"
-            resolutionX={32}
-            resolutionY={32}
-            punch={1}
-            style={{ filter: "blur(20px)" }}
-          />
+          <div className="absolute object-cover">
+            <Blurhash
+              hash={data.blurhash}
+              width="100%"
+              height="100%"
+              resolutionX={32}
+              resolutionY={32}
+              punch={1}
+              style={{ filter: "blur(20px)" }}
+            />
+          </div>
         </div>
       </div>
     </>

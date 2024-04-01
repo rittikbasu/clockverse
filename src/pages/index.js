@@ -6,7 +6,7 @@ import { Blurhash } from "react-blurhash";
 import clsx from "clsx";
 
 import { TextGenerateEffect } from "@/components/text-generate-effect";
-import { getCurrentTime } from "./utils/getCurrentTime";
+import getCurrentTime from "./utils/getCurrentTime";
 
 export default function Home() {
   const [data, setData] = useState({

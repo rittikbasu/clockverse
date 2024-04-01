@@ -1,4 +1,4 @@
-export function getCurrentTime() {
+export default function getCurrentTime() {
   return new Date().toLocaleTimeString("en-US", {
     hour12: true,
     hour: "2-digit",

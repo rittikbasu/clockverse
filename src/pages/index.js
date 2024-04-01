@@ -6,6 +6,7 @@ import { Blurhash } from "react-blurhash";
 import clsx from "clsx";
 
 import { TextGenerateEffect } from "@/components/text-generate-effect";
+import { getCurrentTime } from "./utils/getCurrentTime";
 
 export default function Home() {
   const [data, setData] = useState({
@@ -47,31 +48,30 @@ export default function Home() {
     const newData = {
       poem: apiData.poem || "Backup poem text",
       poet: apiData.poet || "Backup poet name",
-      imageUrl: apiData.imageUrl || backupImageUrl,
-      blurhash: apiData.blurhash || backupBlurhash,
-      imageAlt: apiData.imageAlt || backupImageAlt,
+      imageUrl: apiData.imageUrl || data.imageUrl || backupImageUrl,
+      blurhash: apiData.blurhash || data.blurhash || backupBlurhash,
+      imageAlt: apiData.imageAlt || data.imageAlt || backupImageAlt,
     };
     setData(newData);
+    const currentTime = getCurrentTime();
+    localStorage.setItem("data", JSON.stringify(newData));
+    localStorage.setItem("time", currentTime);
   };
 
   useEffect(() => {
-    const savedBlurhash = localStorage.getItem("blurhash");
-    if (savedBlurhash) {
-      setData((prevData) => ({ ...prevData, blurhash: savedBlurhash }));
-    }
-    fetchPoemAndImage();
-  }, []);
-
-  useEffect(() => {
     let previousMinute = new Date().getMinutes();
+    const savedData = localStorage.getItem("data");
+    const savedTime = localStorage.getItem("time");
+    const currentTime = getCurrentTime();
+    if (savedTime === currentTime && savedData) {
+      setData(JSON.parse(savedData));
+    } else {
+      fetchPoemAndImage();
+    }
 
     const interval = setInterval(() => {
       const currentMinute = new Date().getMinutes();
-      const newTime = new Date().toLocaleTimeString("en-US", {
-        hour12: true,
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const newTime = getCurrentTime();
 
       if (currentMinute !== previousMinute) {
         fetchPoemAndImage();
@@ -85,14 +85,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    console.log("prevImage: ", prevImage);
     if (data.imageUrl === prevImage || prevImage === "") {
       setBlurAmount("backdrop-blur-none");
     } else {
       setBlurAmount("backdrop-blur-3xl");
-      localStorage.setItem("blurhash", data.blurhash);
     }
-  }, [data.imageUrl]);
+  }, [data]);
 
   return (
     <>

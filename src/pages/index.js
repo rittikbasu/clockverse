@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
@@ -16,41 +16,35 @@ export default function Home() {
     blurhash: "L9FFjRNJKQ_3~q4.xCRPK7^+M{V@",
     imageAlt: "",
   });
+  const dataRef = useRef(data);
+  dataRef.current = data;
   const backupImageUrl =
     "https://images.unsplash.com/photo-1710976151734-72b48a6d66f4?q=80&w=2548&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
   const backupBlurhash = "LE9@L+~pM_M|?a%MR,M|IpRkWBNG";
   const backupImageAlt = "a group of people crossing a street in a city";
-  const [currentTime, setCurrentTime] = useState(
-    new Date().toLocaleTimeString("en-US", {
-      hour12: true,
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  );
+  const [currentTime, setCurrentTime] = useState("");
   const [blurAmount, setBlurAmount] = useState("backdrop-blur-none");
   const [prevImage, setPrevImage] = useState("");
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const fetchPoemAndImage = async () => {
-    const currentTimeParam = new Date().toLocaleTimeString("en-US", {
-      hour12: true,
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const currentTimeParam = getCurrentTime();
     const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     const response = await fetch(
       `/api/fetchData?time=${encodeURIComponent(
         currentTimeParam
       )}&tz=${encodeURIComponent(timeZoneName)}`
     );
     const apiData = await response.json();
-    console.log(apiData);
+    // console.log(apiData);
+    console.log(data.imageUrl);
     const newData = {
       poem: apiData.poem || "Backup poem text",
       poet: apiData.poet || "Backup poet name",
-      imageUrl: apiData.imageUrl || data.imageUrl || backupImageUrl,
-      blurhash: apiData.blurhash || data.blurhash || backupBlurhash,
-      imageAlt: apiData.imageAlt || data.imageAlt || backupImageAlt,
+      imageUrl: apiData.imageUrl || dataRef.current.imageUrl || backupImageUrl,
+      blurhash: apiData.blurhash || dataRef.current.blurhash || backupBlurhash,
+      imageAlt: apiData.imageAlt || dataRef.current.imageAlt || backupImageAlt,
     };
     setData(newData);
     const currentTime = getCurrentTime();
@@ -121,7 +115,6 @@ export default function Home() {
                 )}
                 priority
                 onLoad={() => {
-                  console.log("Image loaded");
                   setBlurAmount("backdrop-blur-none");
                   setTimeout(() => {
                     setPrevImage(data.imageUrl);

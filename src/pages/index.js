@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { Blurhash } from "react-blurhash";
+import clsx from "clsx";
 
 import { TextGenerateEffect } from "@/components/text-generate-effect";
 
@@ -25,7 +26,9 @@ export default function Home() {
       minute: "2-digit",
     })
   );
-  const [blurAmount, setBlurAmount] = useState("blur-none");
+  const [blurAmount, setBlurAmount] = useState("backdrop-blur-none");
+  const [prevImage, setPrevImage] = useState("");
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const fetchPoemAndImage = async () => {
     const currentTimeParam = new Date().toLocaleTimeString("en-US", {
@@ -40,36 +43,15 @@ export default function Home() {
       )}&tz=${encodeURIComponent(timeZoneName)}`
     );
     const apiData = await response.json();
-
-    if (apiData.imageUrl) {
-      if (apiData.imageUrl === data.imageUrl) {
-        setBlurAmount("blur-none");
-      } else {
-        setBlurAmount("blur-3xl");
-      }
-      setData(apiData);
-      localStorage.setItem("blurhash", apiData.blurhash);
-    } else {
-      if (data.imageUrl) {
-        console.log("dfoivnfdoinvovup image loaded");
-        setData((prevData) => ({
-          ...prevData,
-          poem: apiData.poem,
-          poet: apiData.poet,
-        }));
-      } else {
-        console.log("Backup image loaded");
-        setBlurAmount("blur-3xl");
-        setData({
-          poem: apiData.poem,
-          poet: apiData.poet,
-          imageUrl: backupImageUrl,
-          blurhash: backupBlurhash,
-          imageAlt: backupImageAlt,
-        });
-        localStorage.setItem("blurhash", backupBlurhash);
-      }
-    }
+    console.log(apiData);
+    const newData = {
+      poem: apiData.poem || "Backup poem text",
+      poet: apiData.poet || "Backup poet name",
+      imageUrl: apiData.imageUrl || backupImageUrl,
+      blurhash: apiData.blurhash || backupBlurhash,
+      imageAlt: apiData.imageAlt || backupImageAlt,
+    };
+    setData(newData);
   };
 
   useEffect(() => {
@@ -102,6 +84,16 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    console.log("prevImage: ", prevImage);
+    if (data.imageUrl === prevImage || prevImage === "") {
+      setBlurAmount("backdrop-blur-none");
+    } else {
+      setBlurAmount("backdrop-blur-3xl");
+      localStorage.setItem("blurhash", data.blurhash);
+    }
+  }, [data.imageUrl]);
+
   return (
     <>
       <Head>
@@ -109,53 +101,74 @@ export default function Home() {
         <title>clockverse - a poem for every minute</title>
       </Head>
       <div className="flex flex-col justify-center items-center h-dvh w-dvw">
-        <div className="absolute top-12 md:top-36 left-1/2 transform -translate-x-1/2 z-50 md:text-6xl text-4xl">
-          {currentTime}
-        </div>
-        {data.imageUrl ? (
-          <>
-            <div className="relative w-full h-full">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/30 to-black/30 z-40"></div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 bg-black opacity-30 z-40"></div>
+          <div
+            className={clsx(
+              "absolute inset-0 z-40 transistion duration-[3000ms] ease-in",
+              blurAmount
+            )}
+          ></div>
+          <div className="absolute top-12 md:top-36 left-1/2 transform -translate-x-1/2 z-50 md:text-6xl text-4xl">
+            {currentTime}
+          </div>
+          {data.poem && (
+            <>
               <Image
                 src={data.imageUrl}
                 alt={data.imageAlt || "An image from Unsplash"}
-                layout="fill"
-                objectFit="cover"
-                className={` ${blurAmount} transistion duration-[3000ms] ease-in`}
+                fill
+                className={clsx(
+                  "absolute object-cover",
+                  isImageLoaded ? "z-30" : "z-10"
+                )}
                 priority
-                onLoadingComplete={() => setBlurAmount("blur-none")}
+                onLoad={() => {
+                  console.log("Image loaded");
+                  setBlurAmount("backdrop-blur-none");
+                  setTimeout(() => {
+                    setPrevImage(data.imageUrl);
+                    setIsImageLoaded(true);
+                  }, 1000);
+                }}
               />
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-8 py-16 w-full flex justify-center items-center z-40">
+              {prevImage && (
+                <Image
+                  src={prevImage}
+                  alt=""
+                  fill
+                  className={clsx(
+                    "absolute object-cover",
+                    isImageLoaded ? "z-10" : "z-30"
+                  )}
+                />
+              )}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-8 py-16 w-full flex justify-center items-center z-50">
                 <TextGenerateEffect words={data.poem} />
-                {/* {data.imageAlt} */}
               </div>
-            </div>
-            <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50 md:text-xl group">
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-100/80 whitespace-nowrap italic group-hover:hidden">
-                in the style of {data.poet}
-              </span>
-              <Link
-                href="http://twitter.com/_rittik"
-                className="hidden group-hover:block text-orange-300 tracking-widest hover:underline underline-offset-8"
-              >
-                by @_rittik
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-black opacity-40 z-40"></div>
-            <Blurhash
-              hash={data.blurhash}
-              width="100%"
-              height="100%"
-              resolutionX={32}
-              resolutionY={32}
-              punch={1}
-              style={{ filter: "blur(20px)" }}
-            />
-          </>
-        )}
+              <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50 md:text-xl group">
+                <span className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-100/80 whitespace-nowrap italic group-hover:hidden">
+                  in the style of {data.poet}
+                </span>
+                <Link
+                  href="http://twitter.com/_rittik"
+                  className="hidden group-hover:block text-orange-300 tracking-widest hover:underline underline-offset-8"
+                >
+                  by @_rittik
+                </Link>
+              </div>
+            </>
+          )}
+          <Blurhash
+            hash={data.blurhash}
+            width="100%"
+            height="100%"
+            resolutionX={32}
+            resolutionY={32}
+            punch={1}
+            style={{ filter: "blur(20px)" }}
+          />
+        </div>
       </div>
     </>
   );

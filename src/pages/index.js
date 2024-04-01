@@ -47,16 +47,18 @@ export default function Home() {
       imageAlt: apiData.imageAlt || dataRef.current.imageAlt || backupImageAlt,
     };
     setData(newData);
-    const currentTime = getCurrentTime();
+    const currentLocalTime = getCurrentTime();
     localStorage.setItem("data", JSON.stringify(newData));
-    localStorage.setItem("time", currentTime);
+    localStorage.setItem("time", currentLocalTime);
   };
 
   useEffect(() => {
     const savedData = localStorage.getItem("data");
     const savedTime = localStorage.getItem("time");
-    const currentTime = getCurrentTime();
-    if (savedTime === currentTime && savedData) {
+    const currentLocalTime = getCurrentTime();
+    setCurrentTime(currentLocalTime);
+
+    if (savedTime === currentLocalTime && savedData) {
       setData(JSON.parse(savedData));
     } else {
       fetchPoemAndImage();

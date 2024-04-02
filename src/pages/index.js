@@ -13,7 +13,7 @@ export default function Home() {
     poem: "",
     poet: "",
     imageUrl: "",
-    blurhash: "L9FFjRNJKQ_3~q4.xCRPK7^+M{V@",
+    blurhash: "",
     imageAlt: "",
   });
   const dataRef = useRef(data);
@@ -38,7 +38,7 @@ export default function Home() {
     );
     const apiData = await response.json();
     // console.log(apiData);
-    console.log(data.imageUrl);
+
     const newData = {
       poem: apiData.poem || "Backup poem text",
       poet: apiData.poet || "Backup poet name",
@@ -153,13 +153,15 @@ export default function Home() {
           )}
           <div className="absolute object-cover">
             <Blurhash
-              hash={data.blurhash}
+              hash={data.blurhash || backupBlurhash}
               width="100%"
               height="100%"
               resolutionX={32}
               resolutionY={32}
               punch={1}
-              style={{ filter: "blur(20px)" }}
+              style={{
+                filter: "blur(20px)",
+              }}
             />
           </div>
         </div>

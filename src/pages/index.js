@@ -49,9 +49,8 @@ export default function Home() {
       imageAlt: apiData.imageAlt || dataRef.current.imageAlt || backupImageAlt,
     };
     setData(newData);
-    const currentLocalTime = getCurrentTime();
     localStorage.setItem("data", JSON.stringify(newData));
-    localStorage.setItem("time", currentLocalTime);
+    localStorage.setItem("time", currentTimeParam);
   };
 
   useEffect(() => {

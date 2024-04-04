@@ -34,8 +34,26 @@ const poets = [
   "rumi",
 ];
 
+const words = [
+  "life",
+  "time",
+  "internet",
+  "time travel",
+  "moon",
+  "space",
+  "universe",
+  "cosmos",
+  "coding",
+  "time machine",
+  "infinity",
+  "machine",
+  "cipher",
+  "future",
+];
+
 const openai = new OpenAI({
-  apiKey: process.env["OPENAI_API_KEY"],
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env["OPENROUTER_API_KEY"],
 });
 
 const redis = new Redis({
@@ -97,18 +115,19 @@ export default async function handler(req, res) {
     }
 
     const poet = poets[Math.floor(Math.random() * poets.length)];
+    const word = words[Math.floor(Math.random() * words.length)];
     const openaiResponse = await openai.chat.completions.create({
       messages: [
         {
           role: "system",
-          content: `You are a poet that makes a beautiful and short poem, no more than 4 verses long in the style of ${poet} with the current time by using the time in the first line of the poem, write the time in words in full and not as numerals. Note: use \n to separate the verses.`,
+          content: `You are a poet who writes a beautiful and short poem, exactly 4 lines long in the style of ${poet}. Your poem revolves around the word: "${word}". Let the word inspire you to create a poem that resonates deeply, capturing the essence of the word in your verse. Remember to keep your poem exactly 4 lines long.`,
         },
-        {
-          role: "user",
-          content: `The time is ${time}`,
-        },
+        // {
+        //   role: "user",
+        //   content: `Write a poem in the style of ${poet}. Your poem revolves around the word "${word}". Let the word inspire you to create a poem that resonates deeply, capturing the essence of the word in your verses. Remember to keep your poem exactly 4 lines.`,
+        // },
       ],
-      model: "gpt-3.5-turbo",
+      model: "mistralai/mistral-7b-instruct:free",
     });
 
     const poem = openaiResponse.choices[0].message.content;

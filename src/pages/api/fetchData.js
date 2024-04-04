@@ -43,7 +43,7 @@ const words = [
   "space",
   "universe",
   "cosmos",
-  "coding",
+  "computer programming",
   "time machine",
   "infinity",
   "machine",

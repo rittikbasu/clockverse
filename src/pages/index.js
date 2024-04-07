@@ -35,14 +35,9 @@ export default function Home() {
   };
 
   const fetchPoemAndImage = async () => {
-    const currentTimeParam = getCurrentTime();
-    const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const currentLocalTime = getCurrentTime();
 
-    const response = await fetch(
-      `/api/fetchData?time=${encodeURIComponent(
-        currentTimeParam
-      )}&tz=${encodeURIComponent(timeZoneName)}`
-    );
+    const response = await fetch("/api/fetchData?");
     const apiData = await response.json();
     // console.log(apiData);
 
@@ -56,7 +51,7 @@ export default function Home() {
     setData(newData);
     setShowFooterLink(false);
     localStorage.setItem("data", JSON.stringify(newData));
-    localStorage.setItem("time", currentTimeParam);
+    localStorage.setItem("time", currentLocalTime);
   };
 
   useEffect(() => {
@@ -155,7 +150,7 @@ export default function Home() {
             </div>
             <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50">
               {showFooterLink ? (
-                <Link href="http://twitter.com/_rittik">
+                <Link href="http://twitter.com/_rittik" target="_blank">
                   <TextGenerateEffect
                     words="by @_rittik"
                     className={

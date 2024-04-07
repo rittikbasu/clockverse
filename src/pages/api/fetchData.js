@@ -45,11 +45,9 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
-  const { time, tz } = req.query;
-  const redisPoemKey = time + "_" + tz;
-  const redisImageKey = new Date()
-    .toISOString()
-    .replace(/:\d{2}\.\d{3}Z$/, "Z");
+  const currentTime = new Date().toISOString().replace(/:\d{2}\.\d{3}Z$/, "Z");
+  const redisPoemKey = currentTime + "_" + "poem";
+  const redisImageKey = currentTime + "_" + "image";
   let imageUrl;
   let blurhash;
   let imageAlt;

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { motion, stagger, useAnimate } from "framer-motion";
+import clsx from "clsx";
 
 export const TextGenerateEffect = ({ words, className }) => {
   const [scope, animate] = useAnimate();
@@ -35,12 +36,8 @@ export const TextGenerateEffect = ({ words, className }) => {
   };
 
   return (
-    <div className={className}>
-      <div className="">
-        <div className="whitespace-pre-line font-sans md:text-5xl text-3xl md:leading-normal">
-          {renderWords()}
-        </div>
-      </div>
+    <div className={clsx("whitespace-pre-line font-sans", className)}>
+      {renderWords()}
     </div>
   );
 };

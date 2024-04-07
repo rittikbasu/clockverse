@@ -28,6 +28,11 @@ export default function Home() {
   const [prevImage, setPrevImage] = useState("");
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [firstLoad, setFirstLoad] = useState(true);
+  const [showFooterLink, setShowFooterLink] = useState(false);
+
+  const toggleVisibility = () => {
+    setShowFooterLink(!showFooterLink);
+  };
 
   const fetchPoemAndImage = async () => {
     const currentTimeParam = getCurrentTime();
@@ -49,6 +54,7 @@ export default function Home() {
       imageAlt: apiData.imageAlt || dataRef.current.imageAlt || backupImageAlt,
     };
     setData(newData);
+    setShowFooterLink(false);
     localStorage.setItem("data", JSON.stringify(newData));
     localStorage.setItem("time", currentTimeParam);
   };
@@ -94,7 +100,10 @@ export default function Home() {
         <link rel="icon" href="/favicon.png" type="image/png" />
         <title>clockverse - a poem for every minute</title>
       </Head>
-      <div className="flex flex-col justify-center items-center h-dvh w-dvw">
+      <div
+        className="flex flex-col justify-center items-center h-dvh w-dvw"
+        onClick={toggleVisibility}
+      >
         <div className="absolute inset-0 bg-black opacity-30 z-40"></div>
         <div
           className={clsx(
@@ -139,18 +148,27 @@ export default function Home() {
               />
             )}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-8 py-16 w-full flex justify-center items-center z-50">
-              <TextGenerateEffect words={data.poem} />
+              <TextGenerateEffect
+                words={data.poem}
+                className="md:text-5xl text-3xl md:leading-normal"
+              />
             </div>
-            <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50 md:text-xl group">
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-100/80 whitespace-nowrap italic group-hover:hidden">
-                in the style of {data.poet}
-              </span>
-              <Link
-                href="http://twitter.com/_rittik"
-                className="hidden group-hover:block text-orange-300 tracking-widest hover:underline underline-offset-8"
-              >
-                by @_rittik
-              </Link>
+            <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50">
+              {showFooterLink ? (
+                <Link href="http://twitter.com/_rittik">
+                  <TextGenerateEffect
+                    words="by @_rittik"
+                    className={
+                      "tracking-widest text-orange-300 hover:underline underline-offset-8 md:text-xl"
+                    }
+                  />
+                </Link>
+              ) : (
+                <TextGenerateEffect
+                  words={`in the style of ${data.poet}`}
+                  className="md:text-xl"
+                />
+              )}
             </div>
           </>
         )}

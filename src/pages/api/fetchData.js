@@ -34,23 +34,6 @@ const poets = [
   "rumi",
 ];
 
-const words = [
-  "life",
-  "time",
-  "internet",
-  "time travel",
-  "moon",
-  "space",
-  "universe",
-  "cosmos",
-  "computer programming",
-  "time machine",
-  "infinity",
-  "machine",
-  "cipher",
-  "future",
-];
-
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: process.env["OPENROUTER_API_KEY"],
@@ -115,23 +98,24 @@ export default async function handler(req, res) {
     }
 
     const poet = poets[Math.floor(Math.random() * poets.length)];
-    const word = words[Math.floor(Math.random() * words.length)];
     const openaiResponse = await openai.chat.completions.create({
       messages: [
         {
           role: "system",
-          content: `You are a poet who writes a beautiful and short poem, exactly 4 lines long in the style of ${poet}. Your poem revolves around the word: "${word}". Let the word inspire you to create a poem that resonates deeply, capturing the essence of the word in your verse. Remember to keep your poem exactly 4 lines long.`,
+          content: `You are a poet who writes a beautiful poem in the style of ${poet}, that is precisely 4 lines long. Your poem can be inspired by something profound, fun, or anything else that moves you. The poem should stand alone, encapsulating its essence in just these four lines, no more, no less. Please generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages included. Your focus should be on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.
+          `,
         },
-        // {
-        //   role: "user",
-        //   content: `Write a poem in the style of ${poet}. Your poem revolves around the word "${word}". Let the word inspire you to create a poem that resonates deeply, capturing the essence of the word in your verses. Remember to keep your poem exactly 4 lines.`,
-        // },
+        {
+          role: "user",
+          content: `Write a poem that is 4 lines long, no more, no less.`,
+        },
       ],
       model: "mistralai/mistral-7b-instruct:free",
     });
 
-    const poem = openaiResponse.choices[0].message.content;
-
+    let poem = openaiResponse.choices[0].message.content;
+    // console.log(poem);
+    poem = poem.split("\n").slice(0, 4).join("\n");
     await redis.set(redisPoemKey, JSON.stringify({ poem, poet }), {
       ex: 60,
     });

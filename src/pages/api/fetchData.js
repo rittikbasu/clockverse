@@ -105,7 +105,7 @@ export default async function handler(req, res) {
         },
         {
           role: "user",
-          content: `Write a poem that is 4 lines long, no more, no less.`,
+          content: `Write a poem that is ONLY 4 LINES LONG.`,
         },
       ],
       model: "mistralai/mistral-7b-instruct:free",

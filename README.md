@@ -1,6 +1,6 @@
 # clockverse
 
-I built this project because I didn't have a clock in my room, but what I did have was a spare monitor. Thus, clockverse was born, a creative way to fill that empty screen and display an AI generated poem every minute in the style of renowned poets, paired with beautiful backgrounds.
+I built this project because I didn't have a clock in my room, but what I did have was a spare monitor. Thus, clockverse was born, a creative way to fill that empty screen with an AI generated poem every minute in the style of renowned poets and paired with beautiful backgrounds.
 
 ![frize](<https://ik.imagekit.io/zwcfsadeijm/clockverse_ss_W_7MYspuL.png?updatedAt=1712597082755>)
 

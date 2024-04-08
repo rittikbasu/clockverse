@@ -37,7 +37,7 @@ export default function Home() {
   const fetchPoemAndImage = async () => {
     const currentLocalTime = getCurrentTime();
 
-    const response = await fetch("/api/fetchData?");
+    const response = await fetch("/api/fetchData");
     const apiData = await response.json();
     // console.log(apiData);
 
@@ -148,20 +148,20 @@ export default function Home() {
                 className="md:text-5xl text-3xl md:leading-normal"
               />
             </div>
-            <div className="absolute bottom-12 md:bottom-36 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="absolute bottom-12 md:bottom-36 left-0 right-0 z-50">
               {showFooterLink ? (
                 <Link href="http://twitter.com/_rittik" target="_blank">
                   <TextGenerateEffect
                     words="by @_rittik"
                     className={
-                      "tracking-widest text-orange-300 hover:underline underline-offset-8 md:text-xl"
+                      "tracking-widest text-orange-300 hover:underline underline-offset-8 md:text-xl w-full text-center"
                     }
                   />
                 </Link>
               ) : (
                 <TextGenerateEffect
                   words={`in the style of ${data.poet}`}
-                  className="md:text-xl"
+                  className="md:text-xl w-full text-center"
                 />
               )}
             </div>

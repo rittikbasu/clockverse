@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { Redis } from "@upstash/redis";
+import { Redis as SubscribeRedis } from "ioredis";
 
 const openRouter = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -14,6 +15,8 @@ const redis = new Redis({
   url: process.env.REDIS_URL,
   token: process.env.REDIS_TOKEN,
 });
+
+const redisSubscriber = new SubscribeRedis(process.env.REDIS_SUBSCRIPTIONS);
 
 const poets = [
   "sylvia plath",
@@ -112,29 +115,45 @@ async function checkOrSetCache(redisKey, callback) {
   let cachedData = await redis.hgetall(redisKey);
   if (cachedData) return cachedData;
 
+  const redisPipeline = redis.pipeline();
+
   const lockAcquired = await redis.set(redisKey + "_lock", "1", {
     ex: 10,
     nx: true,
   });
+  console.log("Lock acquired...", lockAcquired);
   if (!lockAcquired) {
-    let delay = 2000;
-    while (delay >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      cachedData = await redis.hgetall(redisKey);
-      if (cachedData) return cachedData;
-      delay -= 500;
-    }
-    return callback();
+    return new Promise((resolve, reject) => {
+      redisSubscriber.subscribe(redisKey, (err) => {
+        console.log(`Subscribed to ${redisKey} channel`);
+        if (err) {
+          reject(err);
+        }
+      });
+
+      redisSubscriber.on("message", async (channel, message) => {
+        if (channel === redisKey && message === "data_ready") {
+          console.log("Received message from channel", channel);
+          redisSubscriber.unsubscribe(redisKey);
+          const cachedData = await redis.hgetall(redisKey);
+          resolve(cachedData);
+        }
+      });
+    });
   }
 
   const data = await callback();
   // console.log(data);
   // remove undefined or null values from the object
   Object.keys(data).forEach((key) => data[key] == null && delete data[key]);
-  await redis.hset(redisKey, data);
+  redisPipeline
+    .hset(redisKey, data)
+    .expire(redisKey, 60)
+    .del(redisKey + "_lock")
+    .publish(redisKey, "data_ready");
 
-  await redis.expire(redisKey, 60);
-  await redis.del(redisKey + "_lock");
+  await redisPipeline.exec();
+
   return data;
 }
 
@@ -142,7 +161,6 @@ export default async function handler(req, res) {
   const currentTime = new Date();
   const timeKey = currentTime.toISOString().substring(11, 16);
   const redisKey = timeKey + "_data";
-
   const cachedData = await checkOrSetCache(redisKey, async () => {
     const { imageUrl, blurhash, imageAlt } = await fetchImage();
     const poem = await generatePoem();

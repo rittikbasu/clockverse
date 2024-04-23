@@ -6,12 +6,15 @@ import { Blurhash } from "react-blurhash";
 import clsx from "clsx";
 
 import { TextGenerateEffect } from "@/components/text-generate-effect";
-import getCurrentTime from "./utils/getCurrentTime";
+import getCurrentTime from "../utils/getCurrentTime";
 
+const backupPoem =
+  "Moments in life, fleeting and rare,\nLove in the air, suffused so fair,\nHearts intertwined, two souls embrace,\nLife, a journey, a beautiful chase";
+const backupPoet = "pablo neruda";
 const backupImageUrl =
-  "https://images.unsplash.com/photo-1710976151734-72b48a6d66f4?q=80&w=2548&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-const backupBlurhash = "LE9@L+~pM_M|?a%MR,M|IpRkWBNG";
-const backupImageAlt = "a group of people crossing a street in a city";
+  "https://images.unsplash.com/photo-1535323341863-35008c694623?crop=entropy&cs=srgb&fm=jpg&ixid=M3w1ODMzNjF8MHwxfGFsbHx8fHx8fHx8fDE3MTM5MTM4Nzh8&ixlib=rb-4.0.3&q=85";
+const backupBlurhash = "LRG%j7EeEKNa%4EMsWs:0wNY%1of";
+const backupImageAlt = "purple sky";
 
 export default function Home() {
   const [data, setData] = useState({
@@ -36,22 +39,38 @@ export default function Home() {
 
   const fetchPoemAndImage = async () => {
     const currentLocalTime = getCurrentTime();
-
-    const response = await fetch("/api/fetchData");
-    const apiData = await response.json();
-    // console.log(apiData);
-
-    const newData = {
-      poem: apiData.poem || "Backup poem text",
-      poet: apiData.poet || "Backup poet name",
-      imageUrl: apiData.imageUrl || dataRef.current.imageUrl || backupImageUrl,
-      blurhash: apiData.blurhash || dataRef.current.blurhash || backupBlurhash,
-      imageAlt: apiData.imageAlt || dataRef.current.imageAlt || backupImageAlt,
+    let newData = {
+      poem: backupPoem,
+      poet: backupPoet,
+      imageUrl: backupImageUrl,
+      blurhash: backupBlurhash,
+      imageAlt: backupImageAlt,
     };
-    setData(newData);
-    setShowFooterLink(false);
-    localStorage.setItem("data", JSON.stringify(newData));
-    localStorage.setItem("time", currentLocalTime);
+
+    try {
+      const response = await fetch("/api/fetchData");
+      if (!response.ok) throw new Error("Response not OK");
+      const apiData = await response.json();
+
+      newData = {
+        poem: apiData.poem || backupPoem,
+        poet: apiData.poet || backupPoet,
+        imageUrl:
+          apiData.imageUrl || dataRef.current.imageUrl || backupImageUrl,
+        blurhash:
+          apiData.blurhash || dataRef.current.blurhash || backupBlurhash,
+        imageAlt:
+          apiData.imageAlt || dataRef.current.imageAlt || backupImageAlt,
+      };
+      setData(newData);
+    } catch (error) {
+      console.error("Failed to fetch poem and image:", error);
+      setData(newData);
+    } finally {
+      setShowFooterLink(false);
+      localStorage.setItem("data", JSON.stringify(newData));
+      localStorage.setItem("time", currentLocalTime);
+    }
   };
 
   useEffect(() => {

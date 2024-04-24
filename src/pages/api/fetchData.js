@@ -1,22 +1,5 @@
 import OpenAI from "openai";
 import { Redis } from "@upstash/redis";
-import { Redis as SubscribeRedis } from "ioredis";
-
-const openRouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env["OPENROUTER_API_KEY"],
-});
-
-const openAI = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const redis = new Redis({
-  url: process.env.REDIS_URL,
-  token: process.env.REDIS_TOKEN,
-});
-
-const redisSubscriber = new SubscribeRedis(process.env.REDIS_SUBSCRIPTIONS);
 
 const poets = [
   "sylvia plath",
@@ -51,121 +34,142 @@ const poets = [
   "rumi",
 ];
 
-const defaultPoem =
-  "In the still of night,\nBeneath the moon's soft light,\nYour love is like a blood moon\nEternal and bright.";
+const openai = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env["OPENROUTER_API_KEY"],
+});
 
-const poet = poets[Math.floor(Math.random() * poets.length)];
+const redis = new Redis({
+  url: process.env.REDIS_URL,
+  token: process.env.REDIS_TOKEN,
+});
 
-async function generatePoem() {
-  let aiResponse;
-  const prompt = [
-    {
-      role: "system",
-      content: `You are a poet who writes a beautiful poem in English in the style of ${poet}, that is precisely 4 lines long, without starting or ending with quotation marks or apostrophes, and without extra new lines. Your poem should be inspired by something profound, fun, or anything else that moves you. It should stand alone, encapsulating its essence in just these four lines, no more, no less. Generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages. Focus on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.
-    `,
-    },
-    {
-      role: "user",
-      content: `Write a poem that is ONLY 4 LINES LONG.`,
-    },
-  ];
-  try {
-    aiResponse = await openRouter.chat.completions.create({
-      messages: prompt,
-      model: "mistralai/mistral-7b-instruct:free",
-    });
-    await redis.incr("mistral-7b");
-  } catch (error) {
-    console.log(error.message);
-    aiResponse = await openAI.chat.completions.create({
-      messages: prompt,
-      model: "gpt-3.5-turbo",
-    });
-    await redis.incr("gpt-3.5-turbo");
-  } finally {
-    const poem = aiResponse?.choices[0]?.message?.content || defaultPoem;
-    return poem.split("\n").slice(0, 4).join("\n");
-  }
+async function fetchPoem(poet) {
+  const openaiResponse = await openai.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: `You are a poet who writes a beautiful poem in the style of ${poet}, that is precisely 4 lines long. Your poem can be inspired by something profound, fun, or anything else that moves you. The poem should stand alone, encapsulating its essence in just these four lines, no more, no less. Please generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages included. Your focus should be on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.`,
+      },
+      {
+        role: "user",
+        content: `Write a poem that is ONLY 4 LINES LONG.`,
+      },
+    ],
+    model: "mistralai/mistral-7b-instruct:free",
+  });
+
+  let poem = openaiResponse.choices[0].message.content;
+  poem = poem.split("\n").slice(0, 4).join("\n");
+  return poem;
 }
 
 async function fetchImage() {
-  try {
-    const response = await fetch(
-      "https://api.unsplash.com/photos/random?orientation=portrait&topics=M8jVbLbTRws",
-      {
-        headers: {
-          Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
-        },
-      }
-    );
-    if (!response.ok) throw new Error("Rate Limit Exceeded");
-    const data = await response.json();
-    return {
-      imageUrl: data.urls.full,
-      blurhash: data.blur_hash,
-      imageAlt: data.alt_description,
-    };
-  } catch (error) {
-    console.log(error.message);
-    return {};
+  const unsplashResponse = await fetch(
+    "https://api.unsplash.com/photos/random?orientation=portrait&topics=M8jVbLbTRws",
+    {
+      headers: {
+        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+      },
+    }
+  );
+  if (!unsplashResponse.ok) {
+    throw new Error("Rate Limit Exceeded");
   }
+
+  const data = await unsplashResponse.json();
+  return {
+    imageUrl: data.urls.full,
+    blurhash: data.blur_hash,
+    imageAlt: data.alt_description,
+  };
 }
 
-async function checkOrSetCache(redisKey, callback) {
-  let cachedData = await redis.hgetall(redisKey);
-  if (cachedData) return cachedData;
+async function acquireLock(lockKey) {
+  const lock = await redis.setnx(lockKey, "locked", { ex: 10 });
+  return lock === 1;
+}
 
-  const redisPipeline = redis.pipeline();
+async function releaseLock(lockKey) {
+  await redis.del(lockKey);
+}
 
-  const lockAcquired = await redis.set(redisKey + "_lock", "1", {
-    ex: 10,
-    nx: true,
-  });
-  console.log("Lock acquired...", lockAcquired);
-  if (!lockAcquired) {
-    return new Promise((resolve, reject) => {
-      redisSubscriber.subscribe(redisKey, (err) => {
-        console.log(`Subscribed to ${redisKey} channel`);
-        if (err) {
-          reject(err);
-        }
-      });
-
-      redisSubscriber.on("message", async (channel, message) => {
-        if (channel === redisKey && message === "data_ready") {
-          console.log("Received message from channel", channel);
-          redisSubscriber.unsubscribe(redisKey);
-          const cachedData = await redis.hgetall(redisKey);
-          resolve(cachedData);
-        }
-      });
-    });
+async function waitForDataOrLock(redisPoemKey, redisImageKey, lockKey) {
+  let attempt = 0;
+  while (attempt < 20) {
+    const cachedPoem = await redis.get(redisPoemKey);
+    const cachedImage = await redis.get(redisImageKey);
+    if (cachedPoem && cachedImage) {
+      return {
+        cachedPoem: cachedPoem,
+        cachedImage: cachedImage,
+        lockAcquired: false,
+      };
+    }
+    if (await acquireLock(lockKey)) {
+      return {
+        cachedPoem: cachedPoem ? cachedPoem : null,
+        cachedImage: cachedImage ? cachedImage : null,
+        lockAcquired: true,
+      };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    attempt++;
   }
-
-  const data = await callback();
-  // console.log(data);
-  // remove undefined or null values from the object
-  Object.keys(data).forEach((key) => data[key] == null && delete data[key]);
-  redisPipeline
-    .hset(redisKey, data)
-    .expire(redisKey, 60)
-    .del(redisKey + "_lock")
-    .publish(redisKey, "data_ready");
-
-  await redisPipeline.exec();
-
-  return data;
 }
 
 export default async function handler(req, res) {
-  const currentTime = new Date();
-  const timeKey = currentTime.toISOString().substring(11, 16);
-  const redisKey = timeKey + "_data";
-  const cachedData = await checkOrSetCache(redisKey, async () => {
-    const { imageUrl, blurhash, imageAlt } = await fetchImage();
-    const poem = await generatePoem();
-    return { poem, poet, imageUrl, blurhash, imageAlt };
-  });
+  const currentMinute = new Date().getMinutes();
+  const redisPoemKey = `poem_${currentMinute}`;
+  const redisImageKey = `image_${currentMinute}`;
+  const lockKey = `lock_${currentMinute}`;
 
-  res.status(200).json(cachedData);
+  try {
+    const { cachedPoem, cachedImage, lockAcquired } = await waitForDataOrLock(
+      redisPoemKey,
+      redisImageKey,
+      lockKey
+    );
+
+    let poem, poet, imageUrl, blurhash, imageAlt;
+
+    if (cachedPoem) {
+      ({ poem, poet } = cachedPoem);
+    }
+
+    if (cachedImage) {
+      ({ imageUrl, blurhash, imageAlt } = cachedImage);
+    }
+
+    if (lockAcquired) {
+      if (!cachedPoem) {
+        poet = poets[Math.floor(Math.random() * poets.length)];
+        poem = await fetchPoem(poet);
+        await redis.set(redisPoemKey, JSON.stringify({ poem, poet }), {
+          ex: 86400,
+        });
+      }
+
+      if (!cachedImage) {
+        ({ imageUrl, blurhash, imageAlt } = await fetchImage());
+        await redis.set(
+          redisImageKey,
+          JSON.stringify({ imageUrl, blurhash, imageAlt }),
+          { ex: 60 }
+        );
+      }
+      await releaseLock(lockKey);
+    }
+
+    if (!poem || !imageUrl) {
+      return res
+        .status(503)
+        .json({ error: "Failed to retrieve or generate necessary data." });
+    }
+
+    res.status(200).json({ poem, poet, imageUrl, blurhash, imageAlt });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
 }

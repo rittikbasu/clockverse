@@ -49,7 +49,6 @@ export default function Home() {
 
     try {
       const response = await fetch("/api/fetchData");
-      if (!response.ok) throw new Error("Response not OK");
       const apiData = await response.json();
 
       newData = {

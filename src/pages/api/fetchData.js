@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { Redis, UpstashError } from "@upstash/redis";
+import { Redis } from "@upstash/redis";
 
 const poets = [
   "sylvia plath",
@@ -172,10 +172,7 @@ export default async function handler(req, res) {
     // If we reach here, something unexpected happened
     throw new Error("Unexpected state: neither cached data nor lock acquired");
   } catch (error) {
-    if (
-      error instanceof UpstashError &&
-      error.message.includes("max daily request limit exceeded")
-    ) {
+    if (error.message.includes("max daily request limit exceeded")) {
       console.error("Upstash Daily Limit Reached:", error.message);
       res.status(429).json({
         error: "Service temporarily unavailable due to request limit.",

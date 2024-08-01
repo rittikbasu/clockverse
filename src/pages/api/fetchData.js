@@ -91,7 +91,7 @@ async function fetchImage() {
 
     const data = await unsplashResponse.json();
     return {
-      imageUrl: data.urls.full,
+      imageUrl: data.urls.regular,
       blurhash: data.blur_hash,
       imageAlt: data.alt_description,
     };

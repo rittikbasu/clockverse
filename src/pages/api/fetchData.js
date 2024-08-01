@@ -85,7 +85,8 @@ async function fetchImage() {
       }
     );
     if (!unsplashResponse.ok) {
-      throw new Error("Rate Limit Exceeded");
+      console.log("Unsplash API rate limit exceeded or other error");
+      return { imageUrl: null, blurhash: null, imageAlt: null };
     }
 
     const data = await unsplashResponse.json();
@@ -95,8 +96,8 @@ async function fetchImage() {
       imageAlt: data.alt_description,
     };
   } catch (error) {
-    console.error(error);
-    return { rateLimitExceeded: true };
+    console.error("Error fetching image:", error);
+    return { imageUrl: null, blurhash: null, imageAlt: null };
   }
 }
 
@@ -151,10 +152,9 @@ export default async function handler(req, res) {
       // Generate new data
       const poet = poets[Math.floor(Math.random() * poets.length)];
       const poem = await fetchPoem(poet);
-      const imageResult = await fetchImage();
+      const { imageUrl, blurhash, imageAlt } = await fetchImage();
 
-      if (poem && imageResult && !imageResult.rateLimitExceeded) {
-        const { imageUrl, blurhash, imageAlt } = imageResult;
+      if (poem) {
         const newData = { poem, poet, imageUrl, blurhash, imageAlt };
 
         // Store new data in Redis
@@ -165,13 +165,14 @@ export default async function handler(req, res) {
         return res.status(200).json(newData);
       } else {
         await redis.del(lockKey);
-        throw new Error("Failed to generate poem or fetch image");
+        throw new Error("Failed to generate poem");
       }
     }
 
     // If we reach here, something unexpected happened
     throw new Error("Unexpected state: neither cached data nor lock acquired");
   } catch (error) {
+    console.log("Error:", error);
     if (error.message.includes("max daily request limit exceeded")) {
       console.error("Upstash Daily Limit Reached:", error.message);
       res.status(429).json({

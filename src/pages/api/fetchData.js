@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { Redis } from "@upstash/redis";
+import { Redis, UpstashError } from "@upstash/redis";
 
 const poets = [
   "sylvia plath",

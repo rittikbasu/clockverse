@@ -108,7 +108,7 @@ async function waitForDataOrLock(redisKey, lockKey, currentTime) {
 
   while (attempt < maxAttempts) {
     const cachedData = await redis.hgetall(redisKey);
-    if (cachedData && cachedData.poem && cachedData.imageUrl) {
+    if (cachedData && cachedData.poem) {
       return { cachedData, lockAcquired: false };
     }
 

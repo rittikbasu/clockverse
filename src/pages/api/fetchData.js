@@ -62,6 +62,7 @@ async function fetchPoem(poet) {
         },
       ],
       model: "gemma2-9b-it",
+      top_p: 0.9,
     });
     let poem = openaiResponse.choices[0].message.content
       .split("\n")

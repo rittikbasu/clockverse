@@ -78,7 +78,7 @@ async function fetchPoem(poet) {
 async function fetchImage() {
   try {
     const unsplashResponse = await fetch(
-      "https://api.unsplash.com/photos/random?orientation=portrait&topics=M8jVbLbTRws",
+      "https://api.unsplash.com/photos/random?orientation=portrait&topics=xHxYTMHLgOc",
       {
         headers: {
           Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,

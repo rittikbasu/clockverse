@@ -61,7 +61,7 @@ async function fetchPoem(poet) {
           content: `Write a poem that is ONLY 4 LINES LONG.`,
         },
       ],
-      model: "gemma2-9b-it",
+      model: "llama3-70b-8192",
       top_p: 0.9,
     });
     let poem = openaiResponse.choices[0].message.content

@@ -49,30 +49,38 @@ export const config = {
 };
 
 async function fetchPoem(poet) {
-  try {
-    const openaiResponse = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `You are a poet who writes a beautiful poem in the style of ${poet}, that is precisely 4 lines long. Your poem can be inspired by something profound, fun, or anything else that moves you. The poem should stand alone, encapsulating its essence in just these four lines, no more, no less. Please generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages included. Your focus should be on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.`,
-        },
-        {
-          role: "user",
-          content: `Write a poem that is ONLY 4 LINES LONG.`,
-        },
-      ],
-      model: "llama3-70b-8192",
-      top_p: 0.9,
-    });
-    let poem = openaiResponse.choices[0].message.content
-      .split("\n")
-      .slice(0, 4)
-      .join("\n");
-    return poem;
-  } catch (error) {
-    console.error("Error fetching poem:", error);
-    return null;
+  const models = ["llama3-70b-8192", "gemma2-9b-it"];
+  for (const model of models) {
+    try {
+      const openaiResponse = await openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a poet who writes a beautiful poem in the style of ${poet}, that is precisely 4 lines long. Your poem can be inspired by something profound, fun, or anything else that moves you. The poem should stand alone, encapsulating its essence in just these four lines, no more, no less. Please generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages included. Your focus should be on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.`,
+          },
+          {
+            role: "user",
+            content: `Write a poem that is ONLY 4 LINES LONG.`,
+          },
+        ],
+        model: model,
+        top_p: 0.9,
+      });
+      let poem = openaiResponse.choices[0].message.content
+        .split("\n")
+        .slice(0, 4)
+        .join("\n");
+      return poem;
+    } catch (error) {
+      console.error(`Error fetching poem with model ${model}:`, error);
+      if (error.response && error.response.status === 503) {
+        continue; // try the next model
+      } else {
+        return null;
+      }
+    }
   }
+  return null;
 }
 
 async function fetchImage() {

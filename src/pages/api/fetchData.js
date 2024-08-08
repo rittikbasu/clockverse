@@ -72,10 +72,11 @@ async function fetchPoem(poet) {
         .join("\n");
       return poem;
     } catch (error) {
-      console.error(`Error fetching poem with model ${model}:`, error);
-      if (error.response && error.response.status === 503) {
-        continue; // try the next model
+      if (error.status === 503) {
+        console.log("llama3-70b-8192 is rate limited, trying gemma2-9b-it");
+        continue;
       } else {
+        console.error("Error fetching poem:", error);
         return null;
       }
     }

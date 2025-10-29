@@ -44,36 +44,42 @@ const redis = new Redis({
   token: process.env.REDIS_TOKEN,
 });
 
-export const config = {
-  maxDuration: 20,
-};
+const COMPLETION_MODELS = ["moonshotai/kimi-k2-instruct", "openai/gpt-oss-20b"];
+
+const POEM_SYSTEM_PROMPT =
+  "You are a poet who writes a beautiful poem in the style of {{poet}}, that is precisely 4 lines long. Your poem can be inspired by something profound, fun, or anything else that moves you. The poem should stand alone, encapsulating its essence in just these four lines, no more, no less. Please generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages included. Your focus should be on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.";
+
+const POEM_USER_PROMPT = "Write a poem that is ONLY 4 LINES LONG.";
+
+const sanitizePoem = (text) => (text || "").replace(/—/g, "");
 
 async function fetchPoem(poet) {
-  const models = ["llama3-70b-8192", "gemma2-9b-it"];
-  for (const model of models) {
+  for (const model of COMPLETION_MODELS) {
     try {
       const openaiResponse = await openai.chat.completions.create({
         messages: [
           {
             role: "system",
-            content: `You are a poet who writes a beautiful poem in the style of ${poet}, that is precisely 4 lines long. Your poem can be inspired by something profound, fun, or anything else that moves you. The poem should stand alone, encapsulating its essence in just these four lines, no more, no less. Please generate the poem as a standalone piece of text, with no additional notes, explanations, symbols, or system messages included. Your focus should be on delivering this poem in its purest form, allowing the words alone to convey its depth and resonance.`,
+            content: POEM_SYSTEM_PROMPT.replace("{{poet}}", poet),
           },
           {
             role: "user",
-            content: `Write a poem that is ONLY 4 LINES LONG.`,
+            content: POEM_USER_PROMPT,
           },
         ],
         model: model,
-        top_p: 0.9,
       });
       let poem = openaiResponse.choices[0].message.content
         .split("\n")
         .slice(0, 4)
         .join("\n");
+      poem = sanitizePoem(poem);
       return poem;
     } catch (error) {
       if (error.status === 503) {
-        console.log("llama3-70b-8192 is rate limited, trying gemma2-9b-it");
+        console.log(
+          "moonshotai/kimi-k2-instruct is rate limited, trying openai/gpt-oss-20b"
+        );
         continue;
       } else {
         console.error("Error fetching poem:", error);
@@ -161,8 +167,8 @@ export default async function handler(req, res) {
     if (lockAcquired) {
       // Generate new data
       const poet = poets[Math.floor(Math.random() * poets.length)];
-      const poem = await fetchPoem(poet);
-      const { imageUrl, blurhash, imageAlt } = await fetchImage();
+      const [poem, image] = await Promise.all([fetchPoem(poet), fetchImage()]);
+      const { imageUrl, blurhash, imageAlt } = image;
 
       if (poem) {
         const newData = { poem, poet, imageUrl, blurhash, imageAlt };

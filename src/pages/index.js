@@ -117,14 +117,14 @@ export default function Home() {
         className="flex flex-col justify-center items-center h-dvh w-dvw"
         onClick={toggleVisibility}
       >
-        <div className="absolute inset-0 bg-black opacity-30 z-40"></div>
+        <div className="absolute inset-0 z-40 bg-black opacity-30"></div>
         <div
           className={clsx(
-            "absolute inset-0 z-40 transistion duration-[3000ms] ease-in",
+            "absolute inset-0 z-40 ease-in transistion duration-[3000ms]",
             blurAmount
           )}
         ></div>
-        <div className="absolute top-12 md:top-36 left-1/2 transform -translate-x-1/2 z-50 md:text-6xl text-4xl">
+        <div className="absolute top-12 left-1/2 z-50 text-4xl transform -translate-x-1/2 md:top-36 md:text-6xl">
           {currentTime}
         </div>
         {data.poem && (
@@ -160,26 +160,27 @@ export default function Home() {
                 )}
               />
             )}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-8 py-16 w-full flex justify-center items-center z-50">
+            <div className="flex absolute top-1/2 left-1/2 z-50 justify-center items-center px-8 py-16 w-full transform -translate-x-1/2 -translate-y-1/2">
               <TextGenerateEffect
+                key={data.poem}
                 words={data.poem}
-                className="md:text-5xl text-3xl md:leading-normal"
+                className="text-3xl md:text-5xl md:leading-normal"
               />
             </div>
-            <div className="absolute bottom-12 md:bottom-36 left-0 right-0 z-50">
+            <div className="absolute right-0 left-0 bottom-12 z-50 md:bottom-36">
               {showFooterLink ? (
                 <Link href="http://twitter.com/_rittik" target="_blank">
                   <TextGenerateEffect
                     words="by @_rittik"
                     className={
-                      "tracking-widest text-orange-300 hover:underline underline-offset-8 md:text-xl w-full text-center"
+                      "w-full tracking-widest text-center text-orange-300 hover:underline underline-offset-8 md:text-xl"
                     }
                   />
                 </Link>
               ) : (
                 <TextGenerateEffect
                   words={`in the style of ${data.poet}`}
-                  className="md:text-xl w-full text-center"
+                  className="w-full text-center md:text-xl"
                 />
               )}
             </div>

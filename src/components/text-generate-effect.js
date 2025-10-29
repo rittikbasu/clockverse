@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { motion, stagger, useAnimate } from "framer-motion";
+import { motion, stagger, useAnimate } from "motion/react";
 import clsx from "clsx";
 
 export const TextGenerateEffect = ({ words, className }) => {
@@ -25,7 +25,7 @@ export const TextGenerateEffect = ({ words, className }) => {
           return (
             <motion.span
               key={word + idx}
-              className="bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-100/80 opacity-0"
+              className="text-transparent bg-clip-text bg-gradient-to-b opacity-0 from-neutral-100 to-neutral-100/80"
             >
               {word}{" "}
             </motion.span>
@@ -36,7 +36,7 @@ export const TextGenerateEffect = ({ words, className }) => {
   };
 
   return (
-    <div className={clsx("whitespace-pre-line font-sans", className)}>
+    <div className={clsx("font-sans whitespace-pre-line", className)}>
       {renderWords()}
     </div>
   );
